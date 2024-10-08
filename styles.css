@@ -1,0 +1,33 @@
+.stButton > button {
+    background-color: blue;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  .stButton > button:hover {
+    background-color: rgb(4, 4, 205);
+    border:  rgb(4, 4, 205);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  footer {
+    visibility: hidden;
+  }
+
+  #MainMenu {
+    visibility: hidden;
+  }
+
+  .stMarkdown {
+    text-align: center;
+  }
+
