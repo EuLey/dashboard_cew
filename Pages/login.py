@@ -1,6 +1,8 @@
 import streamlit as st
 import mysql.connector
 import bcrypt
+from streamlit_extras.switch_page_button import switch_page 
+
 
 # Função para conectar ao banco de dados MySQL
 def conectar_bd():
@@ -35,7 +37,7 @@ def verificar_login():
 
 # Se o usuário já estiver logado, redireciona para a home
 if verificar_login():
-    st.experimental_set_query_params(page="home")
+    switch_page("home") 
 else:
     # Formulário de login
     st.title("Login")
@@ -56,6 +58,7 @@ else:
 
                 # Simular redirecionamento para home.py usando parâmetros na URL
                 st.experimental_set_query_params(page="home")
+                switch_page("home") 
             else:
                 st.error("E-mail ou senha incorretos.")
         else:

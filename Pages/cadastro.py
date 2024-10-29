@@ -1,6 +1,8 @@
 import streamlit as st
 import mysql.connector
 import bcrypt  
+from streamlit_extras.switch_page_button import switch_page 
+
 
 # Configuração da página
 st.set_page_config(
@@ -55,5 +57,6 @@ if botao_submit:
         inserir_usuario(input_name, input_email, input_cpf, input_date, hashed_password)
 
         st.success("Usuário cadastrado com sucesso!")
+        switch_page("login")
     else:
         st.error("Por favor, preencha todos os campos!")
