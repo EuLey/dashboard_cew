@@ -13,7 +13,10 @@ def exibir_carteira_usuario(user_id):
     st.title("Sua Carteira de Investimentos")
 
     with st.form(key="form_investimento"):
-        ativo = st.text_input("Nome do Ativo")
+        
+        ativo = pd.read_csv("tickers_ibra.csv", index_col=0)
+        tickers = st.selectbox(label="Selecione as Empresas", options=ativo, placeholder='Códigos')
+        tickers = [t+".SA" for t in tickers]
         quantidade = st.number_input("Quantidade", min_value=1, step=1)
         preco = st.number_input("Preço por Unidade", min_value=0.0, step=0.01)
         if st.form_submit_button("Adicionar Investimento"):
