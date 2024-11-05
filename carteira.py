@@ -1,3 +1,4 @@
+# carteira.py
 import streamlit as st
 import pandas as pd
 import yfinance as yf
@@ -7,32 +8,32 @@ def exibir_carteira_usuario(user_id):
     st.title("Sua Carteira de Investimentos")
 
     with st.form(key="form_investimento"):
-        # Carregar os tickers disponíveis
+        # Seleção do ativo
         ativo_df = pd.read_csv("tickers_ibra.csv", index_col=0)
         ativo_selecionado = st.selectbox("Selecione a Empresa", options=ativo_df, help='Escolha o código da empresa')
+        
+        if ativo_selecionado:
+            # Obtém o preço atual do ativo
+            ticker_data = yf.Ticker(f"{ativo_selecionado}.SA")
+            preco = ticker_data.history(period="1d")['Close'].iloc[-1]  # Preço de fechamento mais recente
+            st.write(f"Preço Atual de {ativo_selecionado}: R$ {preco:.2f}")
+        else:
+            preco = 0.0
 
+        # Seleção da quantidade
         quantidade = st.number_input("Quantidade", min_value=1, step=1)
 
-        # Verificar o preço atual do ativo
-        if ativo_selecionado:
-            ticker = f"{ativo_selecionado}.SA"  # Adicionar o sufixo para ativos da B3
-            ticker_data = yf.Ticker(ticker)
-            preco_data = ticker_data.history(period="1d")
+        # Calcula o valor total com base na quantidade selecionada
+        valor_total = preco * quantidade
+        st.write(f"Valor Total do Investimento: R$ {valor_total:.2f}")
 
-            # Validar se há dados disponíveis para o ativo
-            if not preco_data.empty:
-                preco = preco_data['Close'].iloc[-1]  # Preço de fechamento mais recente
-                st.write(f"Preço Atual do {ativo_selecionado}: R$ {preco:.2f}")
-            else:
-                st.write("Preço atual não disponível.")
-                preco = 0.0  # Preço padrão se não houver dados
-
+        # Adiciona o investimento ao banco de dados
         if st.form_submit_button("Adicionar Investimento"):
             adicionar_investimento(user_id, ativo_selecionado, quantidade, preco)
             st.success("Investimento adicionado com sucesso!")
-   
-    # Exibir os investimentos do usuário
+    
+    # Exibe a lista de investimentos
     st.subheader("Seus Investimentos")
     investimentos = obter_investimentos_usuario(user_id)
     for inv in investimentos:
-        st.write(f"Ativo: {inv['ativo']}, Quantidade: {inv['quantidade']}, Preço: R${inv['preco']:.2f}")
+        st.write(f"Ativo: {inv['ativo']}, Quantidade: {inv['quantidade']}, Preço: R$ {inv['preco']:.2f}")
