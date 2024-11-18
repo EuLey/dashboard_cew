@@ -3,7 +3,6 @@ import mysql.connector
 import bcrypt
 from streamlit_extras.switch_page_button import switch_page 
 
-
 # Função para conectar ao banco de dados MySQL
 def conectar_bd():
     conexao = mysql.connector.connect(
@@ -15,29 +14,27 @@ def conectar_bd():
 
 conexao = conectar_bd()
 
-# Função para validar o login do usuário
+# Função para validar o login do usuário e retornar o user_id
 def validar_login(email, senha):
     cursor = conexao.cursor()
-    sql = "SELECT senha FROM usuarios WHERE email = %s"
+    sql = "SELECT id, senha FROM usuarios WHERE email = %s"
     cursor.execute(sql, (email,))
     resultado = cursor.fetchone()
     cursor.close()
 
     if resultado:
-        senha_armazenada = resultado[0]
+        user_id, senha_armazenada = resultado
         if bcrypt.checkpw(senha.encode('utf-8'), senha_armazenada.encode('utf-8')):
-            return True
-    return False
+            return user_id
+    return None
 
 # Função para verificar se o usuário está logado
 def verificar_login():
-    if 'logado' in st.session_state and st.session_state['logado']:
-        return True
-    return False
+    return st.session_state.get('logado', False)
 
 # Se o usuário já estiver logado, redireciona para a home
 if verificar_login():
-    switch_page("home") 
+    switch_page("home")
 else:
     # Formulário de login
     st.title("Login")
@@ -51,14 +48,17 @@ else:
     # Se o formulário de login for enviado
     if botao_login:
         if input_email and input_password:
-            if validar_login(input_email, input_password):
+            user_id = validar_login(input_email, input_password)
+            if user_id:
                 st.success("Login realizado com sucesso!")
+                
+                # Armazena os dados do usuário na sessão
                 st.session_state['logado'] = True
                 st.session_state['usuario'] = input_email
+                st.session_state['user_id'] = user_id  # Armazena o ID do usuário
 
-                # Simular redirecionamento para home.py usando parâmetros na URL
-                st.experimental_set_query_params(page="home")
-                switch_page("home") 
+                # Redireciona para a página "home"
+                switch_page("home")
             else:
                 st.error("E-mail ou senha incorretos.")
         else:

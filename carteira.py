@@ -2,7 +2,9 @@
 import streamlit as st
 import pandas as pd
 import yfinance as yf
+import plotly.express as px
 from db_functions import adicionar_investimento, obter_investimentos_usuario
+
 
 def exibir_carteira_usuario(user_id):
     st.title("Sua Carteira de Investimentos")
@@ -32,8 +34,43 @@ def exibir_carteira_usuario(user_id):
             adicionar_investimento(user_id, ativo_selecionado, quantidade, preco)
             st.success("Investimento adicionado com sucesso!")
     
-    # Exibe a lista de investimentos
+   # Exibe a lista de investimentos
     st.subheader("Seus Investimentos")
     investimentos = obter_investimentos_usuario(user_id)
-    for inv in investimentos:
-        st.write(f"Ativo: {inv['ativo']}, Quantidade: {inv['quantidade']}, Preço: R$ {inv['preco']:.2f}")
+
+    if investimentos:  # Verifica se a lista está preenchida
+        df = pd.DataFrame(investimentos)
+    
+        # Adicionar o filtro de ativos
+        ativos_disponiveis = df['ativo'].unique()  # Lista de ativos únicos
+        ativos_selecionados = st.multiselect("Filtrar por Ativos", ativos_disponiveis, default=ativos_disponiveis)
+
+        # Filtrar o DataFrame com base nos ativos selecionados
+        df_filtrado = df[df['ativo'].isin(ativos_selecionados)]
+        
+        # Agrupar ativos com o mesmo nome
+        df_grouped = df_filtrado.groupby('ativo', as_index=False).agg({
+            'quantidade': 'sum',  # Soma das quantidades
+            'preco': 'mean',      # Média dos preços (pode ajustar para 'sum' se necessário)
+        })
+        
+        # Calcular o Valor Total de cada ativo
+        df_grouped['Valor Total'] = df_grouped['quantidade'] * df_grouped['preco']
+        
+        # Calcular o Valor Total da Carteira
+        valor_total_carteira = df_grouped['Valor Total'].sum()
+        
+        # Calcular o percentual de cada ativo na carteira
+        df_grouped['% da Carteira'] = (df_grouped['Valor Total'] / valor_total_carteira) * 100
+
+        # Exibir o valor total da carteira
+        st.write(f"Valor Total da Carteira: R$ {valor_total_carteira:.2f}")
+        
+        # Exibir a tabela agrupada
+        st.dataframe(df_grouped[['ativo', 'quantidade', 'preco', 'Valor Total', '% da Carteira']])
+
+        # Gerar o gráfico de pizza
+        fig = px.pie(df_grouped, values='Valor Total', names='ativo', title='Distribuição da Carteira')
+        st.plotly_chart(fig)
+    else:
+        st.write("Sua carteira está vazia. Adicione investimentos para visualizar.")

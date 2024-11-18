@@ -19,15 +19,18 @@ if 'logado' in st.session_state and st.session_state['logado']:
     if st.sidebar.button("Sair"):
         st.session_state['logado'] = False
         st.session_state.pop('user_id', None)  # Remove o ID do usuário da sessão
+        st.session_state.pop('usuario', None)   # Remove o e-mail do usuário da sessão
         switch_page("login")  # Redireciona para a página de login
 
     # Menu de navegação na barra lateral
     menu_option = st.sidebar.radio("Navegar", ["Minha Carteira", "Análise de Mercado"])
 
     if menu_option == "Minha Carteira":
-        exibir_carteira_usuario(user_id)  # Exibe a carteira do usuário logado
+        exibir_carteira_usuario(user_id) 
+        st.write(f"{st.session_state['usuario']}, aqui está sua carteira de investimentos.")  # Exibe a carteira do usuário logado
     elif menu_option == "Análise de Mercado":
         switch_page("dash")  # Redireciona para a view `dash.py`
 
 else:
     switch_page("login")  # Redireciona para a página de login caso o usuário não esteja logado
+    
