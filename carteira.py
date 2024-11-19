@@ -34,7 +34,7 @@ def exibir_carteira_usuario(user_id):
             adicionar_investimento(user_id, ativo_selecionado, quantidade, preco)
             st.success("Investimento adicionado com sucesso!")
     
-   # Exibe a lista de investimentos
+    # Exibe a lista de investimentos
     st.subheader("Seus Investimentos")
     investimentos = obter_investimentos_usuario(user_id)
 
@@ -51,7 +51,7 @@ def exibir_carteira_usuario(user_id):
         # Agrupar ativos com o mesmo nome
         df_grouped = df_filtrado.groupby('ativo', as_index=False).agg({
             'quantidade': 'sum',  # Soma das quantidades
-            'preco': 'mean',      # Média dos preços (pode ajustar para 'sum' se necessário)
+            'preco': 'mean',      # Média dos preços
         })
         
         # Calcular o Valor Total de cada ativo
@@ -63,11 +63,19 @@ def exibir_carteira_usuario(user_id):
         # Calcular o percentual de cada ativo na carteira
         df_grouped['% da Carteira'] = (df_grouped['Valor Total'] / valor_total_carteira) * 100
 
+        # Obter preços atuais para cada ativo
+        df_grouped['Preço Atual'] = df_grouped['ativo'].apply(
+            lambda ativo: yf.Ticker(f"{ativo}.SA").history(period="1d")['Close'].iloc[-1]
+        )
+
+        # Calcular a rentabilidade de cada ativo
+        df_grouped['Rentabilidade (%)'] = ((df_grouped['Preço Atual'] - df_grouped['preco']) / df_grouped['preco']) * 100
+
         # Exibir o valor total da carteira
         st.write(f"Valor Total da Carteira: R$ {valor_total_carteira:.2f}")
         
-        # Exibir a tabela agrupada
-        st.dataframe(df_grouped[['ativo', 'quantidade', 'preco', 'Valor Total', '% da Carteira']])
+        # Exibir a tabela agrupada com rentabilidade
+        st.dataframe(df_grouped[['ativo', 'quantidade', 'preco', 'Preço Atual', 'Valor Total', 'Rentabilidade (%)', '% da Carteira']])
 
         # Gerar o gráfico de pizza
         fig = px.pie(df_grouped, values='Valor Total', names='ativo', title='Distribuição da Carteira')
