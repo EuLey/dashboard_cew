@@ -3,18 +3,40 @@ import pandas as pd
 import yfinance as yf
 import plotly.express as px
 import locale
-from db_functions import adicionar_investimento, obter_investimentos_usuario
+from db_functions import (
+    adicionar_investimento, obter_investimentos_carteira,
+    criar_carteira, obter_carteiras_usuario
+)
 
-# Configurar a localização para Português (Brasil)
+# Configurar localização para Português (Brasil)
 locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 
 def exibir_carteira_usuario(user_id):
-    st.title("Sua Carteira de Investimentos")
+    st.title("Gerenciador de Carteiras de Investimentos")
+
+    # Seção para seleção e criação de carteiras
+    st.subheader("Gerencie suas Carteiras")
+    carteiras = obter_carteiras_usuario(user_id)
+    opcoes_carteiras = {carteira['nome']: carteira['id'] for carteira in carteiras}
+
+    # Adicionar opção para criar uma nova carteira
+    with st.form(key="form_carteira"):
+        nova_carteira = st.text_input("Nome da Nova Carteira")
+        if st.form_submit_button("Criar Carteira"):
+            if nova_carteira:
+                criar_carteira(user_id, nova_carteira)
+                st.success("Carteira criada com sucesso!")
+                st.rerun()
+
+    # Selecionar a carteira ativa
+    carteira_selecionada = st.selectbox("Selecione uma Carteira", options=list(opcoes_carteiras.keys()))
+    carteira_id = opcoes_carteiras[carteira_selecionada]
 
     # Formulário de adição de investimentos
+    st.subheader(f"Adicionar Investimentos à Carteira: {carteira_selecionada}")
     with st.form(key="form_investimento"):
         ativo_df = pd.read_csv("tickers_ibra.csv", index_col=0)
-        ativo_selecionado = st.selectbox("Selecione a Empresa", options=ativo_df, help='Escolha o código da empresa')
+        ativo_selecionado = st.selectbox("Selecione a Empresa", options=ativo_df)
         
         if ativo_selecionado:
             ticker_data = yf.Ticker(f"{ativo_selecionado}.SA")
@@ -28,15 +50,18 @@ def exibir_carteira_usuario(user_id):
         st.write(f"Valor Total do Investimento: R$ {valor_total:.2f}")
 
         if st.form_submit_button("Adicionar Investimento"):
-            adicionar_investimento(user_id, ativo_selecionado, quantidade, preco)
+            adicionar_investimento(user_id, carteira_id, ativo_selecionado, quantidade, preco)
             st.success("Investimento adicionado com sucesso!")
-    
-    # Exibir os investimentos
-    st.subheader("Seus Investimentos")
-    investimentos = obter_investimentos_usuario(user_id)
+            st.rerun()
+
+    # Exibir investimentos da carteira selecionada
+    st.subheader(f"Investimentos na Carteira: {carteira_selecionada}")
+    investimentos = obter_investimentos_carteira(user_id, carteira_id)
 
     if investimentos:
         df = pd.DataFrame(investimentos)
+
+        # Filtro de ativos
         ativos_disponiveis = df['ativo'].unique()
         ativos_selecionados = st.multiselect("Filtrar por Ativos", ativos_disponiveis, default=ativos_disponiveis)
 
@@ -53,6 +78,7 @@ def exibir_carteira_usuario(user_id):
             st.error("A data inicial não pode ser maior que a data final!")
             return
 
+        # Filtrar os ativos e calcular a rentabilidade
         df_filtrado = df[df['ativo'].isin(ativos_selecionados)]
         df_grouped = df_filtrado.groupby('ativo', as_index=False).agg({'quantidade': 'sum', 'preco': 'mean'})
 
@@ -82,7 +108,8 @@ def exibir_carteira_usuario(user_id):
         st.write(f"Valor Total da Carteira: R$ {valor_total_carteira:.2f}")
         st.dataframe(df_grouped[['ativo', 'quantidade', 'preco', 'Preço Início', 'Preço Fim', 'Rentabilidade (%)', 'Valor Total', '% da Carteira']])
 
-        fig = px.pie(df_grouped, values='Valor Total', names='ativo', title='Distribuição da Carteira')
+        # Exibir gráfico de distribuição
+        fig = px.pie(df_grouped, values='Valor Total', names='ativo', title=f"Distribuição da Carteira: {carteira_selecionada}")
         st.plotly_chart(fig)
     else:
-        st.write("Sua carteira está vazia. Adicione investimentos para visualizar.")
+        st.write("Nenhum investimento nesta carteira.")
